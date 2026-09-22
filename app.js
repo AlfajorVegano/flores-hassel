@@ -8,16 +8,48 @@
     ['sand', 'tormentas<br><em>de arenas.</em>', 6000],
     ['love', 'TE AMO', Infinity]
   ];
-  const motionQuery = new URLSearchParams(location.search).get('motion');
-  let reduced = motionQuery === 'off' || (motionQuery !== 'full' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const params = new URLSearchParams(location.search);
+  // Los códigos separan recuerdos locales; no son contraseñas.
+  const giftId = (params.get('g') || '861405297314').replace(/[^a-zA-Z0-9_-]/g, '').slice(0,80) || '861405297314';
+  const storageKey = `hassel:gift:v1:${giftId}`;
+  let memory = null;
+  try {
+    if (params.get('reset') === '1') {
+      localStorage.removeItem(storageKey);
+      params.delete('reset');
+      history.replaceState(null, '', location.pathname + '?' + params.toString());
+    }
+    const value = JSON.parse(localStorage.getItem(storageKey) || 'null');
+    if (value && Number.isInteger(value.scene) && value.scene >= 0 && value.scene < scenes.length) memory = value;
+  } catch { /* El regalo funciona aunque el navegador no permita guardar datos. */ }
+  const motionQuery = params.get('motion');
+  let reduced = motionQuery === 'off' || (motionQuery !== 'full' && memory?.reduced === true);
+  let current = -1, elapsed = 0, paused = false, last = 0, audio = null, sound = false, nextNote = 0;
+  function saveMemory() {
+    if (current < 0) return;
+    memory = {scene:current, elapsed:Math.min(elapsed,30000), reduced, updatedAt:Date.now()};
+    try { localStorage.setItem(storageKey, JSON.stringify(memory)); } catch { /* Sin almacenamiento. */ }
+  }
   function syncMotion() {
     document.documentElement.dataset.motion = reduced ? 'off' : 'full';
     $('motion').setAttribute('aria-pressed', String(!reduced));
     $('motion').textContent = reduced ? 'Movimiento suave' : 'Full motion';
   }
   syncMotion();
-  $('motion').addEventListener('click', () => { reduced = !reduced; syncMotion(); });
-  let current = -1, elapsed = 0, paused = false, last = 0, audio = null, sound = false, nextNote = 0;
+  $('motion').addEventListener('click', () => { reduced = !reduced; syncMotion(); saveMemory(); });
+  if (giftId === 'alexis-test-2026') $('visitNote').textContent = 'Vista de prueba de Alexis';
+  if (memory) {
+    $('visitNote').textContent = giftId === 'alexis-test-2026' ? 'Tu prueba quedó guardada.' : 'Qué bonito tenerte de vuelta, Hassel.';
+    $('open').textContent = memory.scene === 4 ? 'Volver a mis flores ✦' : 'Continuar mi regalo →';
+    $('restart').hidden = false;
+  }
+  function begin(fromStart = false) {
+    const saved = memory;
+    $('welcome').hidden = true; $('story').hidden = false;
+    show(!fromStart && saved ? saved.scene : 0);
+    if (!fromStart && saved && current < 4) elapsed = Math.max(0, Math.min(Number(saved.elapsed) || 0, scenes[current][2]-1000));
+    saveMemory(); $('pause').focus();
+  }
   function show(index) {
     current = index; elapsed = 0;
     document.body.dataset.scene = scenes[index][0];
@@ -30,18 +62,17 @@
     if (index === 4) petals.forEach((p, i) => { p.x = .2 + Math.random()*.6; p.y = -.2 - i*.022; });
     $('replay').hidden = index !== 4;
     $('chapter').textContent = index === 4 ? 'HASSEL ALEJANDRA' : 'PARA HASSEL';
+    saveMemory();
   }
-  $('open').addEventListener('click', () => {
-    $('welcome').hidden = true; $('story').hidden = false; show(0);
-    $('pause').focus();
-  });
+  $('open').addEventListener('click', () => begin());
+  $('restart').addEventListener('click', () => begin(true));
   $('next').addEventListener('click', () => { if (current < 4) { show(current + 1); if(current === 4) $('replay').focus(); } });
   $('pause').addEventListener('click', () => {
-    paused = !paused; document.body.classList.toggle('is-paused', paused); $('pause').textContent = paused ? '▷' : 'Ⅱ';
+    paused = !paused; document.body.classList.toggle('is-paused', paused); $('pause').textContent = paused ? '▷ Continuar' : 'Ⅱ Pausar';
     $('pause').setAttribute('aria-label', paused ? 'Continuar dedicatoria' : 'Pausar dedicatoria');
   });
   $('replay').addEventListener('click', () => {
-    paused = false; document.body.classList.remove('is-paused'); $('pause').textContent = 'Ⅱ'; $('pause').setAttribute('aria-label', 'Pausar dedicatoria'); show(0); $('pause').focus();
+    paused = false; document.body.classList.remove('is-paused'); $('pause').textContent = 'Ⅱ Pausar'; $('pause').setAttribute('aria-label', 'Pausar dedicatoria'); show(0); $('pause').focus();
   });
   $('sound').addEventListener('click', async () => {
     try {
@@ -114,6 +145,8 @@
     }
     requestAnimationFrame(frame);
   }
-  document.addEventListener('visibilitychange', () => { last=0; if(audio) {if(document.hidden) audio.suspend().catch(()=>{});else if(sound) audio.resume().catch(()=>{});} });
+  setInterval(saveMemory, 1000);
+  addEventListener('pagehide', saveMemory);
+  document.addEventListener('visibilitychange', () => { saveMemory(); last=0; if(audio) {if(document.hidden) audio.suspend().catch(()=>{});else if(sound) audio.resume().catch(()=>{});} });
   requestAnimationFrame(frame);
 })();

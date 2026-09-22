@@ -32,3 +32,11 @@ body.is-paused *,body.is-paused *::before{animation-play-state:paused!important}
 @keyframes growReplay{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
 @keyframes bloomReplay{from{opacity:0;scale:.1}to{opacity:1;scale:1}}
 @media(max-width:650px){header{padding:14px 16px}header>span{font-size:19px}header time{max-width:86px;text-align:center;line-height:1.7}.header-actions{gap:6px}header #motion{font-size:9px;padding:0 10px}header #sound{width:40px;height:40px}.controls{gap:10px}}
+/* Controles cómodos al tacto, también en teléfonos pequeños. */
+.open{min-height:60px;min-width:240px;font-size:16px;border-radius:14px;padding:18px 28px}
+.restart{display:block;margin:14px auto 0;min-height:52px;padding:12px 22px;border:1px solid #e7c57560;border-radius:14px;background:#e7c5750c;font:14px Arial,sans-serif}
+.visit-note{font-size:17px;color:#e8dcbf;margin:16px 0}.visit-note:empty{display:none}.auto-note{font:11px Arial,sans-serif;color:#c8c2b3;margin:16px 0 0}
+header #motion{min-height:52px;padding:0 17px;font-size:12px}header #sound{width:52px;height:52px;font-size:26px}
+.controls{height:auto;min-height:56px;flex-wrap:wrap;gap:12px}.controls button,#replay{min-height:54px;padding:12px 18px;border:1px solid #e7c57550;border-radius:14px;background:#17201cbb;font:14px Arial,sans-serif}.progress{order:3;flex-basis:100%;justify-content:center;padding:6px}
+.copy{padding-bottom:90px}
+@media(max-width:650px){header{flex-wrap:wrap;gap:14px}header time{max-width:none;margin-left:auto}.header-actions{width:100%;justify-content:center;gap:12px}header #motion{font-size:12px;padding:0 18px}header #sound{width:52px;height:52px}.copy{padding-bottom:0}.controls{padding:0 12px;margin:14px 0}.controls button,#replay{font-size:13px;padding:12px 16px}.welcome{padding:16px 20px}.bouquet{height:38svh;min-height:220px}}
