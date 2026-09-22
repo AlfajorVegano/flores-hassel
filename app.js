@@ -78,9 +78,11 @@
   let master = null, soundChosen = false, note = 0;
   let volume = .8;
   function syncSound() {
-    $('sound').setAttribute('aria-pressed', String(sound));
-    $('sound').setAttribute('aria-label', sound ? 'Silenciar música' : 'Activar música');
-    $('sound').textContent = sound ? '♫ Música: sí' : '♫ Música: no';
+    const playing = sound && audio?.state === 'running';
+    $('sound').setAttribute('aria-pressed', String(Boolean(playing)));
+    $('sound').setAttribute('aria-label', playing ? 'Silenciar música' : 'Activar música');
+    $('sound').textContent = playing ? '♫ Música: sí' : sound ? '♫ Toca para escuchar' : '♫ Música: no';
+    $('sound').dataset.audioState = playing ? 'playing' : sound ? 'waiting' : 'muted';
   }
   async function setSound(enabled) {
     sound = enabled;
@@ -90,6 +92,7 @@
         const Ctx = window.AudioContext || window.webkitAudioContext;
         if (!Ctx) throw new Error('Audio no disponible');
         audio = new Ctx();
+        audio.addEventListener('statechange', syncSound);
         master = audio.createGain();
         const compressor = audio.createDynamicsCompressor();
         compressor.threshold.value = -16; compressor.knee.value = 18;
@@ -98,14 +101,19 @@
         master.connect(compressor); compressor.connect(audio.destination);
       }
       if (!audio) return;
-      if (enabled) { await audio.resume(); nextNote = audio.currentTime + .04; }
-      else await audio.suspend();
+      if (enabled) {
+        nextNote = audio.currentTime + .04;
+        syncSound();
+        await audio.resume();
+        if (sound) music();
+      } else await audio.suspend();
+      syncSound();
     } catch {
       sound = false; syncSound();
       $('sound').textContent = '♫ Reintentar música';
     }
   }
-  $('sound').addEventListener('click', () => { soundChosen = true; setSound(!sound); });
+  $('sound').addEventListener('click', () => { soundChosen = true; setSound(!(sound && audio?.state === 'running')); });
   $('volume').addEventListener('input', () => {
     volume = Number($('volume').value) / 100;
     $('volumeValue').textContent = `${Math.round(volume*100)}%`;
@@ -189,12 +197,23 @@
     const dt = last ? Math.min(time-last,100) : 0; last=time;
     if (!document.hidden) {
       if(current>=0 && !paused) {elapsed+=dt;if(elapsed>=scenes[current][2] && current<4) show(current+1);}
-      draw(dt,time);drawPetals(dt);music(time);
+      draw(dt,time);drawPetals(dt);
     }
     requestAnimationFrame(frame);
   }
   setInterval(saveMemory, 1000);
   addEventListener('pagehide', saveMemory);
   document.addEventListener('visibilitychange', () => { saveMemory(); last=0; if(audio) {if(document.hidden) audio.suspend().catch(()=>{});else if(sound) audio.resume().catch(()=>{});} });
+  // El reloj musical no depende de la carga de las animaciones.
+  setInterval(() => { if (!document.hidden) music(); }, 80);
+  function unlockMusic(event) {
+    if (event.target.closest?.('#sound, #volume')) return;
+    if (!soundChosen && (!audio || audio.state !== 'running')) setSound(true);
+  }
+  document.addEventListener('pointerdown', unlockMusic);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') unlockMusic(event);
+  });
+  setSound(true);
   requestAnimationFrame(frame);
 })();

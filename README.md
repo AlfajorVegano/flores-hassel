@@ -37,3 +37,8 @@ Full motion está activo por defecto incluso si el sistema solicita movimiento r
 ## Música mejorada
 
 Composición original sintetizada: melodía de 32 notas, acompañamiento arpegiado y bajos. Timbre triangular con armónicos suaves, envolventes sin clics y compresión dinámica para controlar los picos. No requiere recursos externos ni nuevas licencias. Control de volumen 0–100 % y botón explícito para activar/silenciar. Se inicia mediante el toque en Abrir/Continuar, necesario para que los navegadores permitan reproducir audio. Se suspende al ocultar la pestaña.
+
+
+### Inicio automático de música (revisión 5)
+
+Ahora se intenta reproducir al cargar la página. Cuando la política del navegador bloquea ese intento, se reintenta al primer toque o al pulsar Enter/Espacio. El indicador distingue «Toca para escuchar» de la reproducción efectiva. No se puede garantizar audio antes de cualquier interacción en navegadores que bloquean autoplay. El reloj de audio es independiente de las animaciones. Silenciar explícitamente evita la reactivación por otros toques.
