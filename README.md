@@ -6,7 +6,7 @@ Abrir `index.html` en un navegador o servir esta carpeta con `python -m http.ser
 
 Al abrir el regalo, cinco escenas muestran el mensaje solicitado: agradecimiento, lluvia, nieve, tormentas de arenas y «TE AMO», con la firma «TE AMA - ALEXIS -». El ramo SVG original se conserva. Las partículas y el ambiente cambian con cada frase. La secuencia dura unos 23 segundos y el cierre permanece visible.
 
-Controles: pausar/continuar, avanzar, repetir y activar/desactivar la melodía original sintetizada. El audio está apagado inicialmente. Al cambiar de pestaña, la secuencia y el sonido se suspenden. Se guarda el progreso localmente por código de regalo para continuar al regresar.
+Controles: pausar/continuar, avanzar, repetir y activar/desactivar la melodía original sintetizada. La música comienza al tocar Abrir o Continuar, con volumen inicial del 80 %. Al cambiar de pestaña, la secuencia y el sonido se suspenden. Se guarda el progreso localmente por código de regalo para continuar al regresar.
 
 Diseño adaptable a móvil y escritorio. Full motion está activado por defecto. Se puede reducir el movimiento con el botón superior o con `?motion=off`. En ese modo se mantienen las escenas y la lectura, sin movimiento decorativo.
 
@@ -31,4 +31,9 @@ La primera visita requiere tocar «Abrir mi regalo»; las escenas avanzan autom�
 
 El código separa el progreso, el tiempo dentro de cada escena y la preferencia de movimiento en localStorage. Se guarda cada segundo y al salir. Funciona por navegador, dispositivo y origen: las pruebas en localhost no afectan a GitHub Pages. Si se borran los datos o se usa otro dispositivo, empieza una visita nueva. Sin almacenamiento disponible la experiencia sigue funcionando, sin recordar visitas. El código no autentica personas ni hace privado un sitio público.
 
-Full motion está activo por defecto incluso si el sistema solicita movimiento reducido, según la configuración solicitada para este regalo. El botón permite desactivarlo; esa elección se recuerda. Un parámetro explícito `motion=full` o `motion=off` prevalece al abrir la página. El sonido sigue siendo opcional.
+Full motion está activo por defecto incluso si el sistema solicita movimiento reducido, según la configuración solicitada para este regalo. El botón permite desactivarlo; esa elección se recuerda. Un parámetro explícito `motion=full` o `motion=off` prevalece al abrir la página. El sonido se activa al abrir el regalo, salvo que se haya silenciado expresamente antes de abrirlo.
+
+
+## Música mejorada
+
+Composición original sintetizada: melodía de 32 notas, acompañamiento arpegiado y bajos. Timbre triangular con armónicos suaves, envolventes sin clics y compresión dinámica para controlar los picos. No requiere recursos externos ni nuevas licencias. Control de volumen 0–100 % y botón explícito para activar/silenciar. Se inicia mediante el toque en Abrir/Continuar, necesario para que los navegadores permitan reproducir audio. Se suspende al ocultar la pestaña.

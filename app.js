@@ -44,6 +44,7 @@
     $('restart').hidden = false;
   }
   function begin(fromStart = false) {
+    if (!soundChosen) setSound(true);
     const saved = memory;
     $('welcome').hidden = true; $('story').hidden = false;
     show(!fromStart && saved ? saved.scene : 0);
@@ -74,25 +75,72 @@
   $('replay').addEventListener('click', () => {
     paused = false; document.body.classList.remove('is-paused'); $('pause').textContent = 'Ⅱ Pausar'; $('pause').setAttribute('aria-label', 'Pausar dedicatoria'); show(0); $('pause').focus();
   });
-  $('sound').addEventListener('click', async () => {
+  let master = null, soundChosen = false, note = 0;
+  let volume = .8;
+  function syncSound() {
+    $('sound').setAttribute('aria-pressed', String(sound));
+    $('sound').setAttribute('aria-label', sound ? 'Silenciar música' : 'Activar música');
+    $('sound').textContent = sound ? '♫ Música: sí' : '♫ Música: no';
+  }
+  async function setSound(enabled) {
+    sound = enabled;
+    syncSound();
     try {
-      if (!audio) { const Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return; audio = new Ctx(); }
-      sound = !sound;
-      if (sound) { await audio.resume(); nextNote = 0; } else await audio.suspend();
-      $('sound').setAttribute('aria-pressed', String(sound));
-      $('sound').setAttribute('aria-label', sound ? 'Desactivar sonido' : 'Activar sonido');
-    } catch { sound = false; $('sound').setAttribute('aria-pressed','false'); $('sound').setAttribute('aria-label','Activar sonido'); }
+      if (enabled && !audio) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) throw new Error('Audio no disponible');
+        audio = new Ctx();
+        master = audio.createGain();
+        const compressor = audio.createDynamicsCompressor();
+        compressor.threshold.value = -16; compressor.knee.value = 18;
+        compressor.ratio.value = 4; compressor.attack.value = .005; compressor.release.value = .25;
+        master.gain.value = volume;
+        master.connect(compressor); compressor.connect(audio.destination);
+      }
+      if (!audio) return;
+      if (enabled) { await audio.resume(); nextNote = audio.currentTime + .04; }
+      else await audio.suspend();
+    } catch {
+      sound = false; syncSound();
+      $('sound').textContent = '♫ Reintentar música';
+    }
+  }
+  $('sound').addEventListener('click', () => { soundChosen = true; setSound(!sound); });
+  $('volume').addEventListener('input', () => {
+    volume = Number($('volume').value) / 100;
+    $('volumeValue').textContent = `${Math.round(volume*100)}%`;
+    if(master) master.gain.setTargetAtTime(volume, audio.currentTime, .04);
+    if(volume > 0 && !sound) { soundChosen = true; setSound(true); }
   });
-  let note = 0;
-  function music(time) {
-    if (!sound || !audio || time < nextNote) return;
-    nextNote = time + 850;
-    const melody = [261.63,329.63,392,493.88,440,392,329.63,293.66];
-    const osc = audio.createOscillator(), gain = audio.createGain();
-    const t = audio.currentTime; osc.frequency.value = melody[note++ % melody.length];
-    gain.gain.setValueAtTime(0,t); gain.gain.linearRampToValueAtTime(.045,t+.035); gain.gain.exponentialRampToValueAtTime(.0001,t+2.5);
-    osc.connect(gain); gain.connect(audio.destination); osc.start(t); osc.stop(t+2.6);
-    osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+  syncSound();
+  function voice(frequency, at, duration, level, type = 'triangle') {
+    const osc = audio.createOscillator(), env = audio.createGain();
+    osc.type = type; osc.frequency.value = frequency;
+    env.gain.setValueAtTime(0, at);
+    env.gain.linearRampToValueAtTime(level, at + .018);
+    env.gain.exponentialRampToValueAtTime(.001, at + duration);
+    osc.connect(env); env.connect(master);
+    osc.start(at); osc.stop(at + duration + .04);
+    osc.onended = () => { osc.disconnect(); env.disconnect(); };
+  }
+  // Composición original en cuatro acordes, con melodía y arpegios.
+  const chords = [[261.63,329.63,392],[220,261.63,329.63],[174.61,220,261.63],[196,246.94,293.66]];
+  const melody = [659.25,587.33,523.25,392,523.25,587.33,659.25,783.99,
+    659.25,523.25,440,523.25,659.25,587.33,523.25,440,
+    523.25,698.46,659.25,523.25,440,523.25,587.33,659.25,
+    587.33,493.88,392,493.88,587.33,659.25,587.33,523.25];
+  function music() {
+    if (!sound || !audio || audio.state !== 'running') return;
+    const now = audio.currentTime;
+    if (nextNote < now - .5) nextNote = now + .04;
+    while (nextNote < now + .15) {
+      const chord = chords[Math.floor(note/8)%4];
+      voice(melody[note%melody.length], nextNote, 1.15, .24);
+      voice(melody[note%melody.length]*2, nextNote, .55, .025, 'sine');
+      voice(chord[note%3], nextNote, 1.5, .105);
+      if(note%4 === 0) voice(chord[0]/2, nextNote, 2.2, .15, 'sine');
+      note++; nextNote += .46;
+    }
   }
   const canvas = $('weather'), ctx = canvas.getContext('2d');
   let w = 0, h = 0, motionTime = 0;
